@@ -5,7 +5,7 @@ import (
 )
 
 type Comment struct {
-	Base
+	*Base
 	Name      string `json:"name" gorm:"name"`
 	Email     string `json:"email" gorm:"email"`
 	Url       string `json:"url" gorm:"url"`

@@ -25,7 +25,7 @@ func AddFriend(c *core.Context) {
 		Name:  r.Name,
 		Email: r.Email,
 		Url:   r.Url,
-		Base: entity.Base{
+		Base: &entity.Base{
 			UpdatedAt: time.Now().In(c.TimeLocation),
 			CreatedAt: time.Now().In(c.TimeLocation),
 		},
@@ -75,7 +75,7 @@ func UpdateFriend(c *core.Context) {
 		Name:  r.Name,
 		Email: r.Email,
 		Url:   r.Url,
-		Base: entity.Base{
+		Base: &entity.Base{
 			UpdatedAt: time.Now().In(c.TimeLocation),
 			CreatedAt: comment.CreatedAt,
 		},

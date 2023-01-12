@@ -5,7 +5,7 @@ import (
 )
 
 type Article struct {
-	Base
+	*Base
 	Title  string `json:"title"`
 	Image  string `json:"image"`
 	Html   string `json:"html"`

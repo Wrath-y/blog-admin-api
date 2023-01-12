@@ -5,7 +5,7 @@ import (
 )
 
 type Administrator struct {
-	Base
+	*Base
 	Account  string `json:"account"`
 	Password string `json:"password"`
 }

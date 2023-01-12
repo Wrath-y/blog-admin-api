@@ -31,7 +31,7 @@ func AddArticle(c *core.Context) {
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
-		Base: entity.Base{
+		Base: &entity.Base{
 			UpdatedAt: time.Now().In(c.TimeLocation),
 			CreatedAt: time.Now().In(c.TimeLocation),
 		},
@@ -81,7 +81,7 @@ func UpdateArticle(c *core.Context) {
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
-		Base: entity.Base{
+		Base: &entity.Base{
 			CreatedAt: article.CreatedAt,
 			UpdatedAt: time.Now().In(c.TimeLocation),
 		},

@@ -5,7 +5,7 @@ import (
 )
 
 type FriendLink struct {
-	Base
+	*Base
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Url   string `json:"url"`
