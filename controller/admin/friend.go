@@ -5,6 +5,7 @@ import (
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
 	"strconv"
+	"time"
 )
 
 type FriendRequest struct {
@@ -24,6 +25,10 @@ func AddFriend(c *core.Context) {
 		Name:  r.Name,
 		Email: r.Email,
 		Url:   r.Url,
+		Base: entity.Base{
+			UpdatedAt: time.Now().In(c.TimeLocation),
+			CreatedAt: time.Now().In(c.TimeLocation),
+		},
 	}
 	if err := res.Create(); err != nil {
 		c.ErrorL("创建友链失败", res, err.Error())
@@ -59,10 +64,21 @@ func UpdateFriend(c *core.Context) {
 	logMap["id"] = id
 	logMap["req"] = r
 
+	comment, err := new(entity.FriendLink).GetById(id)
+	if err != nil {
+		c.ErrorL("获取友链失败", logMap, err.Error())
+		c.FailWithErrCode(errcode.FriendLinkGetFailed, nil)
+		return
+	}
+
 	res := &entity.FriendLink{
 		Name:  r.Name,
 		Email: r.Email,
 		Url:   r.Url,
+		Base: entity.Base{
+			UpdatedAt: time.Now().In(c.TimeLocation),
+			CreatedAt: comment.CreatedAt,
+		},
 	}
 	if err := res.Update(id); err != nil {
 		c.ErrorL("更新友链失败", logMap, err.Error())

@@ -2,7 +2,6 @@ package entity
 
 import (
 	"blog-admin-api/pkg/db"
-	"time"
 )
 
 type FriendLink struct {
@@ -17,9 +16,6 @@ func (*FriendLink) TableName() string {
 }
 
 func (h *FriendLink) Create() error {
-	h.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
-	h.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-
 	return db.Orm.Create(h).Error
 }
 
@@ -32,7 +28,6 @@ func (*FriendLink) Delete(id int) error {
 
 func (h *FriendLink) Update(id int) error {
 	h.Id = id
-	h.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	return db.Orm.Model(h).Updates(h).Error
 }

@@ -2,7 +2,6 @@ package entity
 
 import (
 	"blog-admin-api/pkg/db"
-	"time"
 )
 
 type Article struct {
@@ -22,15 +21,11 @@ func (*Article) TableName() string {
 }
 
 func (a *Article) Create() error {
-	a.CreatedAt = time.Now().Format("2006-01-02 15:04:05")
-	a.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
-
 	return db.Orm.Create(a).Error
 }
 
 func (a *Article) Update(id int) error {
 	a.Id = id
-	a.UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
 
 	return db.Orm.Model(a).Updates(a).Error
 }

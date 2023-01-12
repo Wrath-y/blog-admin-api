@@ -5,6 +5,7 @@ import (
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
 	"strconv"
+	"time"
 )
 
 type ArticleRequest struct {
@@ -30,6 +31,10 @@ func AddArticle(c *core.Context) {
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
+		Base: entity.Base{
+			UpdatedAt: time.Now().In(c.TimeLocation),
+			CreatedAt: time.Now().In(c.TimeLocation),
+		},
 	}
 	if err := res.Create(); err != nil {
 		c.ErrorL("创建文章失败", res, nil)
@@ -62,12 +67,24 @@ func UpdateArticle(c *core.Context) {
 		return
 	}
 	logMap["id"] = id
+
+	article, err := new(entity.Article).GetById(id)
+	if err != nil {
+		c.ErrorL("获取文章失败", id, err.Error())
+		c.FailWithErrCode(errcode.ArticleGetFailed, nil)
+		return
+	}
+
 	data := &entity.Article{
 		Title: r.Title,
 		Image: r.Image,
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
+		Base: entity.Base{
+			CreatedAt: article.CreatedAt,
+			UpdatedAt: time.Now().In(c.TimeLocation),
+		},
 	}
 	logMap["data"] = data
 	if err := data.Update(id); err != nil {

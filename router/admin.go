@@ -14,7 +14,7 @@ func loadAdmin(r *gin.RouterGroup) {
 		noAuthApi.POST("/login", core.Handle(admin.Login))
 	}
 
-	authApi := r.Group("/admin", core.Handle(middleware.Auth), core.Handle(middleware.Logging))
+	authApi := r.Group("/admin", core.Handle(middleware.Auth), core.Handle(middleware.Logging), core.Handle(middleware.TimeLocation))
 	{
 		hc := authApi.Group("/health-checks")
 		{
