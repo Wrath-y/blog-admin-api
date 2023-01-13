@@ -97,9 +97,9 @@ func GetUpload(c *core.Context) {
 	policyToken.AccessKeyId = accessKeyId
 	policyToken.Host = host
 	policyToken.Expire = expireEnd
-	policyToken.Signature = string(signedStr)
+	policyToken.Signature = signedStr
 	policyToken.Directory = uploadDir
-	policyToken.Policy = string(debyte)
+	policyToken.Policy = debyte
 	logMap["policyToken"] = policyToken
 
 	response := &Data{
