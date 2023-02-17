@@ -4,8 +4,8 @@ import (
 	"blog-admin-api/core"
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
-	"blog-admin-api/server/auth"
-	"blog-admin-api/server/token"
+	"blog-admin-api/service/auth"
+	"blog-admin-api/service/token"
 )
 
 type UserRequest struct {

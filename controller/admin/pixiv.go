@@ -3,7 +3,7 @@ package admin
 import (
 	"blog-admin-api/core"
 	"blog-admin-api/errcode"
-	"blog-admin-api/server/spider"
+	"blog-admin-api/service/spider"
 	"strconv"
 )
 

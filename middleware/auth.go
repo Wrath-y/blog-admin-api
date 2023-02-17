@@ -3,7 +3,7 @@ package middleware
 import (
 	"blog-admin-api/core"
 	"blog-admin-api/errcode"
-	"blog-admin-api/server/token"
+	"blog-admin-api/service/token"
 )
 
 func Auth(c *core.Context) {
