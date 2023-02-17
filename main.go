@@ -4,6 +4,7 @@ import (
 	"blog-admin-api/pkg/config"
 	"blog-admin-api/pkg/db"
 	"blog-admin-api/pkg/def"
+	"blog-admin-api/pkg/goredis"
 	"blog-admin-api/pkg/httplib"
 	"blog-admin-api/pkg/logging"
 	"blog-admin-api/router"
@@ -20,15 +21,25 @@ import (
 )
 
 func setup() {
-	logging.Setup(viper.GetString("app.log.topic"), logger)
-	httplib.Setup(viper.GetString("app.log.topic"), logger)
 	config.Setup()
 	// 监听nacos变化，发现变化后会自动同步到本地，同时杀掉当前进程（之后pod拉起）
 	config.ListenNacos(logging.New(), httplib.NewClient(httplib.WithTimeout(30*time.Second)))
+	for {
+		if config.HasInit {
+			break
+		}
+		println("wait for nacos sync")
+		time.Sleep(time.Second)
+	}
+	logging.Setup(viper.GetString("app.log.topic"), logger)
+	httplib.Setup(viper.GetString("app.log.topic"), logger)
 	db.Setup()
+	goredis.Setup()
 }
 
 func main() {
+	var err error
+
 	setup()
 
 	switch viper.GetString("app.env") {
@@ -49,6 +60,10 @@ func main() {
 		Handler: r,
 	}
 	log.Println(color.GreenString("项目启动地址 %s", srv.Addr))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

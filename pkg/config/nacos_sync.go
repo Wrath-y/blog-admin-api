@@ -10,6 +10,7 @@ import (
 )
 
 var ErrInvalidConf = errors.New("nacos缺少必要配置")
+var HasInit = false
 
 const (
 	DefaultPollTime = 30 * time.Second
@@ -23,6 +24,7 @@ type nacosParams struct {
 	dataID      string
 	group       string
 	namespaceID string
+	needInit    chan struct{}
 	pollTime    time.Duration
 	timeout     time.Duration
 }
@@ -67,6 +69,7 @@ func ListenNacos(l logger, httpClient httpClient, callbacks ...func(cnf string))
 		c.Username = nacosParams.username
 		c.Password = nacosParams.password
 		c.PollTime = nacosParams.pollTime
+		c.NeedInit = make(chan struct{}, 1)
 		c.HttpClient = &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -76,9 +79,12 @@ func ListenNacos(l logger, httpClient httpClient, callbacks ...func(cnf string))
 
 		c.Logger = l
 		c.HttpClient = httpClient
+
+		c.NeedInit <- struct{}{}
 	})
+
 	nacosConf.ListenAsync(nacosParams.namespaceID, nacosParams.group, nacosParams.dataID, func(cnf string) {
-		l.Info("[nacos] 监听到配置文件有改变，开始获取", nacosParams, nil)
+		//l.Info("[nacos] 监听到配置文件有改变，开始获取", nacosParams, nil)
 
 		content, err := nacosConf.Get(nacosParams.namespaceID, nacosParams.group, nacosParams.dataID)
 		if err != nil {
@@ -94,8 +100,8 @@ func ListenNacos(l logger, httpClient httpClient, callbacks ...func(cnf string))
 		if err := writeFile(DefaultRelationPath, content); err != nil {
 			l.ErrorL("[nacos] 更新配置文件失败: %s", nacosParams, err.Error())
 		}
-		l.Info("[nacos] 更新配置文件成功\n%s", nacosParams, content)
-
+		//l.Info("[nacos] 更新配置文件成功\n%s", nacosParams, content)
+		HasInit = true
 		// 执行callback
 		for _, callbackFunc := range callbacks {
 			callbackFunc(cnf)
