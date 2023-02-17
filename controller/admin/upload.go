@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/spf13/viper"
 	"hash"
 	"time"
@@ -59,7 +60,7 @@ func GetUpload(c *core.Context) {
 	accessKeyId := viper.GetString("aliyun.oss.access_keyid")
 	accessKeySecret := viper.GetString("aliyun.oss.access_keysecret")
 	// host的格式为 bucketname.endpoint
-	host := "https://wrath.oss-cn-shanghai.aliyuncs.com"
+	host := fmt.Sprintf("https://%s.oss-cn-shanghai.aliyuncs.com", viper.GetString("aliyun.oss.bucket"))
 	logMap["host"] = host
 	logMap["accessKeyId"] = accessKeyId
 	logMap["accessKeySecret"] = accessKeySecret
