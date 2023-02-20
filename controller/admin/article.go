@@ -4,6 +4,7 @@ import (
 	"blog-admin-api/core"
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
+	"blog-admin-api/service/article"
 	"strconv"
 	"time"
 )
@@ -19,11 +20,15 @@ type ArticleRequest struct {
 }
 
 func AddArticle(c *core.Context) {
-	var r ArticleRequest
+	var (
+		r      ArticleRequest
+		logMap = make(map[string]interface{})
+	)
 	if err := c.ShouldBindJSON(&r); err != nil {
 		c.FailWithErrCode(errcode.AdminInvalidParam, err.Error())
 		return
 	}
+	logMap["r"] = r
 
 	res := &entity.Article{
 		Title: r.Title,
@@ -36,10 +41,15 @@ func AddArticle(c *core.Context) {
 			CreatedAt: time.Now().In(c.TimeLocation),
 		},
 	}
+	logMap["res"] = res
 	if err := res.Create(); err != nil {
-		c.ErrorL("创建文章失败", res, nil)
+		c.ErrorL("创建文章失败", logMap, err.Error())
 		c.FailWithErrCode(errcode.ArticleCreateFailed, nil)
 		return
+	}
+
+	if err := article.DelList(); err != nil {
+		c.ErrorL("删除缓存失败", logMap, err.Error())
 	}
 
 	c.Success(res)
@@ -47,10 +57,16 @@ func AddArticle(c *core.Context) {
 
 func DelArticle(c *core.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-
+	logMap := make(map[string]interface{})
+	logMap["id"] = id
 	if err := new(entity.Article).Delete(id); err != nil {
+		c.ErrorL("删除失败", logMap, err.Error())
 		c.FailWithErrCode(errcode.ArticleDelFailed, nil)
 		return
+	}
+
+	if err := article.DelById(id); err != nil {
+		c.ErrorL("删除缓存失败", logMap, err.Error())
 	}
 
 	c.Success(nil)
@@ -68,12 +84,13 @@ func UpdateArticle(c *core.Context) {
 	}
 	logMap["id"] = id
 
-	article, err := new(entity.Article).GetById(id)
+	articleInfo, err := new(entity.Article).GetById(id)
 	if err != nil {
 		c.ErrorL("获取文章失败", id, err.Error())
 		c.FailWithErrCode(errcode.ArticleGetFailed, nil)
 		return
 	}
+	logMap["articleInfo"] = articleInfo
 
 	data := &entity.Article{
 		Title: r.Title,
@@ -82,7 +99,7 @@ func UpdateArticle(c *core.Context) {
 		Con:   r.Con,
 		Tags:  r.Tags,
 		Base: &entity.Base{
-			CreatedAt: article.CreatedAt,
+			CreatedAt: articleInfo.CreatedAt,
 			UpdatedAt: time.Now().In(c.TimeLocation),
 		},
 	}
@@ -91,6 +108,13 @@ func UpdateArticle(c *core.Context) {
 		c.ErrorL("更新文章失败", data, err.Error())
 		c.FailWithErrCode(errcode.ArticleUpdateFailed, nil)
 		return
+	}
+
+	if err := article.DelList(); err != nil {
+		c.ErrorL("删除缓存失败", logMap, err.Error())
+	}
+	if err := article.DelById(id); err != nil {
+		c.ErrorL("删除缓存失败", logMap, err.Error())
 	}
 
 	c.Success(data)
