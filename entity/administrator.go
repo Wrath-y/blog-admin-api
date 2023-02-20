@@ -14,6 +14,10 @@ type Token struct {
 	Token string `json:"token"`
 }
 
+func (*Administrator) TableName() string {
+	return "administrator"
+}
+
 func GetUserByName(account string) (*Administrator, error) {
 	a := new(Administrator)
 
