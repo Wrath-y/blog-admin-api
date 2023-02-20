@@ -42,3 +42,8 @@ func (*Comment) Delete(id int) error {
 
 	return db.Orm.Delete(c).Error
 }
+
+func (*Comment) GetById(id int) (*Comment, error) {
+	c := new(Comment)
+	return c, db.Orm.First(&c, id).Error
+}
