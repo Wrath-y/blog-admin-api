@@ -4,6 +4,7 @@ import (
 	"blog-admin-api/core"
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
+	"blog-admin-api/service/friendlink"
 	"strconv"
 	"time"
 )
@@ -36,6 +37,10 @@ func AddFriend(c *core.Context) {
 		return
 	}
 
+	if err := friendlink.DelList(); err != nil {
+		c.ErrorL("删除友链缓存失败", res, err.Error())
+	}
+
 	c.Success(res)
 }
 
@@ -46,6 +51,10 @@ func DelFriend(c *core.Context) {
 		c.ErrorL("删除友链失败", id, err.Error())
 		c.FailWithErrCode(errcode.FriendLinkDelFailed, nil)
 		return
+	}
+
+	if err := friendlink.DelList(); err != nil {
+		c.ErrorL("删除友链缓存失败", id, err.Error())
 	}
 
 	c.Success(nil)
@@ -84,6 +93,10 @@ func UpdateFriend(c *core.Context) {
 		c.ErrorL("更新友链失败", logMap, err.Error())
 		c.FailWithErrCode(errcode.FriendLinkUpdateFailed, nil)
 		return
+	}
+
+	if err := friendlink.DelList(); err != nil {
+		c.ErrorL("删除友链缓存失败", res, err.Error())
 	}
 
 	c.Success(res)
