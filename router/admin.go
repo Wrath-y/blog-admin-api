@@ -9,12 +9,12 @@ import (
 )
 
 func loadAdmin(r *gin.RouterGroup) {
-	noAuthApi := r.Group("/admin", core.Handle(middleware.Logging))
+	noAuthApi := r.Group("/", core.Handle(middleware.Logging))
 	{
 		noAuthApi.POST("/login", core.Handle(admin.Login))
 	}
 
-	authApi := r.Group("/admin", core.Handle(middleware.Auth), core.Handle(middleware.Logging), core.Handle(middleware.TimeLocation))
+	authApi := r.Group("/", core.Handle(middleware.Auth), core.Handle(middleware.Logging), core.Handle(middleware.TimeLocation))
 	{
 		hc := authApi.Group("/health-checks")
 		{
