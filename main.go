@@ -22,6 +22,9 @@ import (
 
 func setup() {
 	config.Setup()
+	if viper.GetString("app.env") == def.EnvDevelopment {
+		goto NotNacos
+	}
 	// 监听nacos变化，发现变化后会自动同步到本地，同时杀掉当前进程（之后pod拉起）
 	config.ListenNacos(logging.New(), httplib.NewClient(httplib.WithTimeout(30*time.Second), httplib.WithTransport(httplib.NewClient(httplib.WithNoLog(true)))))
 	for {
@@ -31,6 +34,7 @@ func setup() {
 		println("wait for nacos sync")
 		time.Sleep(time.Second)
 	}
+NotNacos:
 	logging.Setup(viper.GetString("app.log.topic"), logger)
 	httplib.Setup(viper.GetString("app.log.topic"), logger)
 	db.Setup()
