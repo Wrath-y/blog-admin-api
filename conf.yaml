@@ -1,5 +1,5 @@
 app:
-  env: development
+  env: production
   log:
     topic: admin.wrath.cc
     key: sys:log:list
