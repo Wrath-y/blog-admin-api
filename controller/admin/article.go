@@ -12,6 +12,7 @@ import (
 type ArticleRequest struct {
 	Title  string `json:"title" binding:"required"`
 	Image  string `json:"image"`
+	Intro  string `json:"intro"`
 	Html   string `json:"html" binding:"required"`
 	Con    string `json:"con" binding:"required"`
 	Tags   string `json:"tags" binding:"required"`
@@ -33,6 +34,7 @@ func AddArticle(c *core.Context) {
 	res := &entity.Article{
 		Title: r.Title,
 		Image: r.Image,
+		Intro: r.Intro,
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
@@ -95,6 +97,7 @@ func UpdateArticle(c *core.Context) {
 	data := &entity.Article{
 		Title: r.Title,
 		Image: r.Image,
+		Intro: r.Intro,
 		Html:  r.Html,
 		Con:   r.Con,
 		Tags:  r.Tags,
