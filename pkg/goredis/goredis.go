@@ -10,12 +10,10 @@ import (
 
 var (
 	Client *redis.Client
-	Log    *redis.Client
 )
 
 func Setup() {
 	Client = NewClient("default")
-	Log = NewClient("log")
 }
 
 func NewClient(store string) *redis.Client {

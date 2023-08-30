@@ -31,6 +31,11 @@ func loadAdmin(r *gin.RouterGroup) {
 			articles.GET("", core.Handle(admin.GetArticles))
 			articles.GET("/:id", core.Handle(admin.GetArticle))
 		}
+		seo := authApi.Group("/seo")
+		{
+			seo.POST("/:id", core.Handle(admin.SetArticleSeo))
+			seo.GET("", core.Handle(admin.GetArticleSeo))
+		}
 		uploads := authApi.Group("/uploads")
 		{
 			uploads.GET("", core.Handle(admin.GetUpload))

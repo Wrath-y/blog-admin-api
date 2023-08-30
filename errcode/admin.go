@@ -23,4 +23,7 @@ var (
 	FriendLinkDelFailed    = &ErrCode{40107, "删除友情链接失败", ""}
 	FriendLinkUpdateFailed = &ErrCode{40108, "更新友情链接失败", ""}
 	FriendLinkGetFailed    = &ErrCode{40109, "获取友情链接失败", ""}
+
+	ArticleSeoSetFailed = &ErrCode{40106, "设置文章SEO失败", ""}
+	ArticleSeoGetFailed = &ErrCode{40107, "获取文章SEO失败", ""}
 )
