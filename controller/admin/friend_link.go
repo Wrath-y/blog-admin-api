@@ -27,8 +27,8 @@ func AddFriend(c *core.Context) {
 		Email: r.Email,
 		Url:   r.Url,
 		Base: &entity.Base{
-			update_time: time.Now().In(c.TimeLocation),
-			CreateTime:  time.Now().In(c.TimeLocation),
+			UpdateTime: time.Now().In(c.TimeLocation),
+			CreateTime: time.Now().In(c.TimeLocation),
 		},
 	}
 	if err := res.Create(); err != nil {
@@ -85,8 +85,8 @@ func UpdateFriend(c *core.Context) {
 		Email: r.Email,
 		Url:   r.Url,
 		Base: &entity.Base{
-			update_time: time.Now().In(c.TimeLocation),
-			CreateTime:  comment.CreateTime,
+			UpdateTime: time.Now().In(c.TimeLocation),
+			CreateTime: comment.CreateTime,
 		},
 	}
 	if err := res.Update(id); err != nil {

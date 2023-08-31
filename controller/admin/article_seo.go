@@ -33,8 +33,8 @@ func SetArticleSeo(c *core.Context) {
 			Name:      v.Name,
 			Content:   v.Content,
 			Base: &entity.Base{
-				update_time: time.Now().In(c.TimeLocation),
-				CreateTime:  time.Now().In(c.TimeLocation),
+				UpdateTime: time.Now().In(c.TimeLocation),
+				CreateTime: time.Now().In(c.TimeLocation),
 			},
 		})
 
