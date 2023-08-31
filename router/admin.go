@@ -2,7 +2,6 @@ package router
 
 import (
 	"blog-admin-api/controller/admin"
-	"blog-admin-api/controller/health_check"
 	"blog-admin-api/core"
 	"blog-admin-api/middleware"
 	"github.com/gin-gonic/gin"
@@ -16,13 +15,6 @@ func loadAdmin(r *gin.RouterGroup) {
 
 	authApi := r.Group("/", core.Handle(middleware.Auth), core.Handle(middleware.Logging), core.Handle(middleware.TimeLocation))
 	{
-		hc := authApi.Group("/health-checks")
-		{
-			hc.GET("", core.Handle(health_check.HealthCheck))
-			hc.GET("/disk", core.Handle(health_check.DiskCheck))
-			hc.GET("/cpu", core.Handle(health_check.CPUCheck))
-			hc.GET("/ram", core.Handle(health_check.RAMCheck))
-		}
 		articles := authApi.Group("/articles")
 		{
 			articles.POST("", core.Handle(admin.AddArticle))

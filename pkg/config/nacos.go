@@ -1,290 +1,186 @@
 package config
 
 import (
-	"crypto/hmac"
-	"crypto/md5"
-	"crypto/sha1"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io"
+	"blog-admin-api/pkg/nacos"
+	"crypto/tls"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"log"
 	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
+	"os"
+	"syscall"
 	"time"
 )
 
-type api struct {
-	loginApi  string
-	getApi    string
-	listenApi string
-}
-
-const (
-	contentType      = "application/x-www-form-urlencoded;charset=utf-8"
-	splitConfig      = string(rune(1))
-	splitConfigInner = string(rune(2))
+var (
+	nacosParams *_nacosParams
+	nacosClient *nacos.NacosConfig
 )
 
-type logger interface {
-	Info(message string, request, response interface{}, t ...time.Time)
-	ErrorL(message string, request, response interface{}, t ...time.Time)
-	SetV1(v1 string)
-	SetV2(v2 string)
-	SetV3(v3 string)
+const (
+	defaultPollTime = 60 * time.Second
+	defaultTimeout  = 30 * time.Second
+)
+
+type _nacosParams struct {
+	address   string
+	username  string
+	password  string
+	dataId    string
+	group     string
+	namespace string
+	pollTime  time.Duration
+	timeout   time.Duration
 }
 
-type httpClient interface {
-	Do(req *http.Request) (*http.Response, error)
+type logger struct {
 }
 
-type NacosConfig struct {
-	HttpClient  httpClient
-	ServerAddr  string
-	accessToken string
-	tokenTTL    int
-	Username    string
-	Password    string
-	Logger      logger
-	PollTime    time.Duration
-	NeedInit    chan struct{}
-	api         *api
+func (l *logger) Error(v ...interface{}) {
+	log.Println(v...)
 }
 
-type LoginResponse struct {
-	AccessToken string `json:"accessToken"`
-	TokenTTL    int    `json:"tokenTtl"`
-	GlobalAdmin bool   `json:"globalAdmin"`
+func (l *logger) Info(v ...interface{}) {
+	log.Println(v...)
 }
 
-func NewNacosConfig(options ...func(c *NacosConfig)) *NacosConfig {
-	nc := &NacosConfig{
-		HttpClient: http.DefaultClient,
-		PollTime:   10 * time.Second,
+//func (l *logger) Debug(v ...interface{}) {
+//
+//}
+
+func loadNacosParams() (*_nacosParams, error) {
+	viper.SetConfigName("nacos")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
+	// 读环境变量
+	viper.AutomaticEnv()
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal(err)
 	}
 
-	for _, option := range options {
-		option(nc)
+	namespace := viper.GetString("NACOS_NAMESPACE")
+	conf := &_nacosParams{
+		address:   viper.GetString("NACOS_SERVER"),
+		username:  viper.GetString("NACOS_USERNAME"),
+		password:  viper.GetString("NACOS_PASSWORD"),
+		namespace: namespace,
+		dataId:    viper.GetString(namespace + ".data_id"),
+		group:     viper.GetString(namespace + ".group"),
+		pollTime:  viper.GetDuration(namespace + ".poll_time"),
+		timeout:   viper.GetDuration(namespace + ".timeout"),
 	}
 
-	if nc.Username != "" && nc.Password != "" {
-		nc.api = &api{
-			loginApi:  "/nacos/v1/auth/login",
-			getApi:    "/nacos/v1/cs/configs",
-			listenApi: "/nacos/v1/cs/configs/listener",
+	if conf.address == "" || conf.username == "" || conf.password == "" || conf.namespace == "" {
+		return nil, errors.New("环境变量中缺少nacos配置")
+	}
+	if conf.dataId == "" || conf.group == "" {
+		return nil, errors.New("本地配置文件中缺少nacos配置")
+	}
+	if conf.pollTime == 0 {
+		conf.pollTime = defaultPollTime
+	}
+	if conf.timeout == 0 {
+		conf.timeout = defaultTimeout
+	}
+
+	return conf, nil
+}
+
+func SetupNacosClient() {
+	var err error
+	nacosParams, err = loadNacosParams()
+	if err != nil {
+		log.Fatalf("加载nacos配置失败: %s", err.Error())
+	}
+	nacosClient = nacos.NewNacosConfig(func(c *nacos.NacosConfig) {
+		c.ServerAddr = nacosParams.address
+		c.Username = nacosParams.username
+		c.Password = nacosParams.password
+		c.PollTime = nacosParams.pollTime
+		c.HttpClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+			Timeout: nacosParams.timeout,
 		}
-		if err := nc.login(); err != nil {
-			panic(err)
+		c.Logger = &logger{}
+	})
+}
+
+func DownloadNacosConfig() {
+	var err error
+	for i := 0; i < 2; i++ {
+		if _, err = downloadNacosConfig(); err == nil {
+			log.Println("nacos本地配置文件已更新")
+			return
 		}
+		time.Sleep(time.Second)
 	}
 
-	return nc
+	log.Fatalf("nacos配置文件下载失败: %s", err.Error())
 }
 
-func (n *NacosConfig) login() error {
-	n.Logger.SetV3("login")
-	////n.Logger.Info(fmt.Sprintf("nacos login server:[%s:%s]", n.ServerAddr, n.Username), nil, nil)
+// ListenNacos 监控nacos
+func ListenNacos(callbacks ...func(cnf string)) {
+	nacosClient.ListenAsync(nacosParams.namespace, nacosParams.group, nacosParams.dataId, func(cnf string) {
+		log.Println("nacos监听到远程配置文件有改变，开始获取")
 
-	v := url.Values{}
-	v.Add("username", n.Username)
-	v.Add("password", n.Password)
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s", n.ServerAddr, n.api.loginApi), strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Content-Type", contentType)
-
-	resp, err := n.HttpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	bb, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("nacos login fail:%s", string(bb))
-	}
-
-	loginResp := &LoginResponse{}
-
-	if err := json.Unmarshal(bb, loginResp); err != nil {
-		return err
-	}
-	n.accessToken = loginResp.AccessToken
-	n.tokenTTL = loginResp.TokenTTL - 600
-
-	return nil
-}
-
-func (n *NacosConfig) Get(namespace, group, dataId string) (string, error) {
-	n.Logger.SetV3("Get")
-	//n.Logger.Info(fmt.Sprintf("nacos get config:[namespace:%s,group:%s,dataId:%s]", namespace, group, dataId), nil, nil)
-
-	v := url.Values{}
-	v.Add("tenant", namespace)
-	v.Add("group", group)
-	v.Add("dataId", dataId)
-	if n.accessToken != "" {
-		v.Add("accessToken", n.accessToken)
-	}
-
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s%s?", n.ServerAddr, n.api.getApi)+v.Encode(), nil)
-	if err != nil {
-		return "", err
-	}
-
-	timeStamp := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
-	req.Header.Add("Content-Type", contentType)
-	req.Header.Add("timeStamp", timeStamp)
-
-	resp, err := n.HttpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	bb, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("nacos get fail:%s", string(bb))
-	}
-
-	return string(bb), nil
-}
-
-func (n *NacosConfig) ListenAsync(namespace, group, dataId string, fn func(cnf string)) {
-	n.Logger.SetV3("ListenAsync")
-	ret, err := n.Get(namespace, group, dataId)
-	if err != nil {
-		panic(err)
-	}
-
-	contentMd5 := md5string(ret)
-
-	go func() {
-		t1 := time.NewTicker(time.Duration(n.tokenTTL) * time.Second)
-		if n.PollTime.Seconds() < 1 {
-			n.PollTime = DefaultPollTime
+		_, err := downloadNacosConfig()
+		if err != nil {
+			log.Println("nacos获取远程配置后更新本地配置文件失败", err.Error())
+			return
 		}
-		t2 := time.NewTicker(n.PollTime)
-		for {
-			select {
-			// token到期刷新
-			case <-t1.C:
-				if n.Username != "" {
-					if err := n.login(); err != nil {
-						n.Logger.ErrorL("登录失败", nil, err)
-					}
-				}
-			// 每10秒监听配置
-			case <-t2.C:
-				update, err := n.Listen(namespace, group, dataId, contentMd5)
-				if err != nil {
-					//n.Logger.ErrorL("监听配置失败", nil, err)
-					continue
-				}
-				if update {
-					ret, err := n.Get(namespace, group, dataId)
-					if err != nil {
-						n.Logger.ErrorL("获取配置失败", nil, err)
-						continue
-					}
 
-					contentMd5 = md5string(ret)
-					//n.Logger.Info(fmt.Sprintf("nacos listen refresh:[namespace:%s,group:%s,dataId:%s,md5:%s]", namespace, group, dataId, contentMd5), nil, nil)
-					fn(ret)
-				}
-			case <-n.NeedInit:
-				ret, err := n.Get(namespace, group, dataId)
-				if err != nil {
-					n.Logger.ErrorL("获取配置失败", nil, err)
-					continue
-				}
+		// 执行callback
+		for _, callbackFunc := range callbacks {
+			callbackFunc(cnf)
+		}
+	})
+}
 
-				contentMd5 = md5string(ret)
-				//n.Logger.Info(fmt.Sprintf("nacos listen refresh:[namespace:%s,group:%s,dataId:%s,md5:%s]", namespace, group, dataId, contentMd5), nil, nil)
-				fn(ret)
-			}
+func downloadNacosConfig() (string, error) {
+	content, err := nacosClient.Get(nacosParams.namespace, nacosParams.group, nacosParams.dataId)
+	if err != nil {
+		return "", errors.Wrapf(err, "获取nacos远程配置失败")
+	}
+	if content == "" {
+		return "", errors.New("获取的nacos远程配置为空")
+	}
+
+	if err := writeFile(DefaultRelationPath, content); err != nil {
+		return "", errors.Wrapf(err, "更新本地配置文件失败")
+	}
+
+	return content, nil
+}
+
+func writeFile(configPath, configContent string) (err error) {
+	// 打开配置文件
+	file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
+		return errors.Wrapf(err, "本地配置文件打开失败")
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	// 阻塞模式下，加排他锁
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX); err != nil {
+		return errors.Wrapf(err, "文件加锁失败")
+	}
+	defer func() {
+		if err = syscall.Flock(int(file.Fd()), syscall.LOCK_UN); err != nil {
+			err = errors.Wrapf(err, "文件解锁失败")
 		}
 	}()
-}
 
-func (n *NacosConfig) Listen(namespace, group, dataId, md5 string) (bool, error) {
-	//n.Logger.Info(fmt.Sprintf("nacos listen start:[namespace:%s,group:%s,dataId:%s,md5:%s]", namespace, group, dataId, md5), nil, nil)
-
-	content := dataId + splitConfigInner + group + splitConfigInner + md5 + splitConfigInner + namespace + splitConfig
-
-	v := url.Values{}
-	if n.Username != "" {
-		v.Add("Listening-Configs", content)
-	} else {
-		v.Add("Probe-Modify-Request", content)
-	}
-	v.Add("tenant", namespace)
-	if n.accessToken != "" {
-		v.Add("accessToken", n.accessToken)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s", n.ServerAddr, n.api.listenApi), strings.NewReader(v.Encode()))
+	// 加载配置信息
+	_, err = file.WriteString(configContent)
 	if err != nil {
-		return false, err
+		return errors.Wrapf(err, "写入本地配置文件失败")
 	}
 
-	timeStamp := strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
-	req.Header.Add("Long-Pulling-Timeout", "3000")
-	req.Header.Add("User-Agent", "Nacos-go-client/v1.0.1")
-	req.Header.Add("exConfigInfo", "true")
-	req.Header.Add("Content-Type", contentType)
-	req.Header.Add("timeStamp", timeStamp)
-
-	resp, err := n.HttpClient.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	bb, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return false, err
-	}
-
-	if resp.StatusCode != 200 {
-		return false, fmt.Errorf("nacos listen response error:%s", string(bb))
-	}
-
-	str := strings.Split(string(bb), "%02")
-
-	// 如果返回数据不为空则代表有变化的文件
-	if len(str) > 0 && str[0] == dataId {
-		return true, nil
-	}
-
-	return false, nil
-}
-
-func md5string(text string) string {
-	algorithm := md5.New()
-	algorithm.Write([]byte(text))
-	return hex.EncodeToString(algorithm.Sum(nil))
-}
-
-func signSha1(encryptText, encryptKey string) string {
-	// hmac ,use sha1
-	key := []byte(encryptKey)
-	mac := hmac.New(sha1.New, key)
-	mac.Write([]byte(encryptText))
-	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	return nil
 }

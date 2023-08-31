@@ -8,11 +8,11 @@ import (
 
 func SetV() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		xRequestID := c.GetHeader(def.RequestID)
+		xRequestID := c.GetHeader(def.XRequestID)
 		if xRequestID == "" {
 			xRequestID = util.UUID()
 		}
-		c.Set(def.RequestID, xRequestID)
+		c.Set(def.XRequestID, xRequestID)
 		c.Set("v1", c.Request.URL.Path)
 		c.Next()
 	}

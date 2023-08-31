@@ -3,13 +3,11 @@ package main
 import (
 	"blog-admin-api/pkg/config"
 	"blog-admin-api/pkg/db"
-	"blog-admin-api/pkg/def"
 	"blog-admin-api/pkg/goredis"
-	"blog-admin-api/pkg/httplib"
 	"blog-admin-api/pkg/logging"
 	"blog-admin-api/router"
 	"context"
-	"github.com/fatih/color"
+	"flag"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"log"
@@ -20,54 +18,54 @@ import (
 	"time"
 )
 
+// setupConfigYaml 就绪配置文件
+// 环境变量配置 NACOS_SKIP="Y", 可跳过下载配置
+// 环境变量:
+// NACOS_USE=false
+// NACOS_NAMESPACE=""
+// NACOS_SERVER=""
+// NACOS_USERNAME=""
+// NACOS_PASSWORD=""
+func setupConfigYaml() {
+	viper.AutomaticEnv()
+	if envUse := viper.GetBool("NACOS_USE"); !envUse {
+		log.Println("跳过从nacos下载配置文件")
+		return
+	}
+
+	config.SetupNacosClient()
+	config.DownloadNacosConfig()
+
+	// 未使用k8s部署时监听nacos（已经被使用的变量不会体现出变化）
+	//config.ListenNacos()
+
+	// 使用k8s部署时监听nacos（已经被使用的变量不会体现出变化）
+	config.ListenNacos(func(cnf string) {
+		log.Println("当前进程将被停止")
+		syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+	})
+}
+
 func setup() {
 	config.Setup()
-	if viper.GetString("app.env") == def.EnvDevelopment {
-		goto NotNacos
-	}
-	// 监听nacos变化，发现变化后会自动同步到本地，同时杀掉当前进程（之后pod拉起）
-	config.ListenNacos(logging.New(), httplib.NewClient(httplib.WithTimeout(30*time.Second), httplib.WithTransport(httplib.NewClient(httplib.WithNoLog(true)))))
-	for {
-		if config.HasInit {
-			break
-		}
-		println("wait for nacos sync")
-		time.Sleep(time.Second)
-	}
-NotNacos:
-	logging.Setup(viper.GetString("app.log.topic"), logger)
-	httplib.Setup(viper.GetString("app.log.topic"), logger)
-	db.Setup()
+	logging.Setup()
 	goredis.Setup()
+	db.Setup()
 }
 
 func main() {
-	var err error
+	// rand.Seed(time.Now().UnixNano()) // version < 1.20
+	flag.Parse()
+	setupConfigYaml()
 
 	setup()
-
-	switch viper.GetString("app.env") {
-	case def.EnvDevelopment:
-		gin.SetMode(gin.DebugMode)
-	case def.EnvTesting:
-		gin.SetMode(gin.TestMode)
-	case def.EnvProduction:
-		gin.SetMode(gin.ReleaseMode)
-	default:
-		gin.SetMode(gin.ReleaseMode)
-	}
-
+	gin.SetMode(gin.ReleaseMode)
 	r := router.Register()
-
 	srv := &http.Server{
 		Addr:    ":8000",
 		Handler: r,
 	}
-	log.Println(color.GreenString("项目启动地址 %s", srv.Addr))
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	logging.New().Info("项目启动成功", srv.Addr, viper.GetString("app.env"))
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -78,30 +76,19 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	// kill (no param) default send syscanll.SIGTERM
 	// kill -2 is syscall.SIGINT
-	// kill -9 is syscall. SIGKILL but can"t be caught, so don't need to add it
+	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutdown Server ...")
+	logging.New().Info("Shutdown Server ...", srv.Addr, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		if err == context.DeadlineExceeded {
-			log.Println("Server Shutdown: timeout of 3 seconds.")
+			logging.New().Info("Server Shutdown: timeout of 3 seconds.", srv.Addr, nil)
 		} else {
-			log.Println("Server Shutdown Error: ", err)
+			logging.New().ErrorL("Server Shutdown Error:", srv.Addr, err)
 		}
 	}
-	log.Println("Server exited")
-}
-
-func logger(data []byte) {
-	switch viper.GetString("app.log.output") {
-	case "stdout":
-		logging.StdoutLogger(data)
-	case "file":
-		logging.FileLogger(data)
-	default:
-		logging.StdoutLogger(data)
-	}
+	logging.New().Info("Server exited", srv.Addr, nil)
 }

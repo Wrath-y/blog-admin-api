@@ -2,9 +2,10 @@ package config
 
 import (
 	"blog-admin-api/pkg/def"
+	"log"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"log"
 )
 
 const DefaultRelationPath = "./conf.yaml"
@@ -17,14 +18,13 @@ func Setup() {
 		log.Fatal(err)
 	}
 
-	// listen and auto reload config
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Println("Config file changed:", e.Name)
+		log.Println("配置文件被修改:", e.Name)
 	})
 	viper.WatchConfig()
 
 	env := viper.GetString("app.env")
-	if env != def.EnvDevelopment && env != def.EnvTesting && env != def.StagingEnv && env != def.EnvProduction {
-		log.Fatal("app.env is not correct")
+	if env != def.EnvDevelopment && env != def.EnvTesting && env != def.EnvProduction {
+		log.Fatal("app.env异常")
 	}
 }

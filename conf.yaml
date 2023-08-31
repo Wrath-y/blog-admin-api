@@ -1,22 +1,24 @@
 app:
-  env: production
+  env: development
   log:
     topic: admin.wrath.cc
-    key: sys:log:list
-    output: stdout
-nacos:
-  address: http://nacos_address:8848
-  username: nacos_username
-  password: nacos_password
-  data_id: blog_admin_api_conf.yaml
-  group: DEFAULT_GROUP
-  namespace_id: nacos_namespace_id
-  poll_time: 60
+    output: file # file:文件输出,fmt:控制台格式化输出,std(default):控制台标准输出
+  aes:
+    key: 0123456789abcdef # 16/24/32字节
+    fields: #支持忽略大小写模糊匹配，如phone可以匹配到phoneNumber,mobilePhone等
+      - secret
+      - password
+      - phone
 redis:
   default:
     address: 127.0.0.1:6379
     min_idle_conns: 5
     pool_size: 200
+    #password:
+    #db: 0
+    #cert: |
+    #key: |
+    #ca: |
 mysql:
   default:
     address: 127.0.0.1:3306
@@ -25,9 +27,17 @@ mysql:
     database: blog
     max_idle_conns: 5
     max_open_conns: 20
+    slow_threshold: 1000ms
+consul:
+  default:
+    address: 127.0.0.1:8500
 aliyun.oss:
-  endpoint: xxx
-  bucket: xxx
-  access_keyid: xxx
-  access_keysecret: xxx
+  endpoint:
+  bucket:
+  access_keyid:
+  access_keysecret:
+access_whitelist:
+  enabled: false # env=testing 该配置无效,强制开启
+  ip_list:
+    - 127.0.0.1
 jwt_secret: jwt_secret_example1

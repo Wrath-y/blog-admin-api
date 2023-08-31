@@ -13,9 +13,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil v2.21.11+incompatible
-	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.14.0
 	golang.org/x/crypto v0.5.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/mysql v1.4.5
 	gorm.io/gorm v1.24.3
 )

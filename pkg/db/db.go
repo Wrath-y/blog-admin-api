@@ -4,21 +4,22 @@ import (
 	"blog-admin-api/pkg/def"
 	"blog-admin-api/pkg/logging"
 	"context"
+	"log"
+	"time"
+
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	glog "gorm.io/gorm/logger"
-	"log"
-	"time"
 )
 
 var Orm *gorm.DB
 
 func Setup() {
-	Orm = NewMysqlDB("default")
+	Orm = newMysqlDB("default")
 }
 
-func NewMysqlDB(store string) *gorm.DB {
+func newMysqlDB(store string) *gorm.DB {
 	dbViper := viper.Sub("mysql." + store)
 	if dbViper == nil {
 		log.Fatal("mysql配置缺失", store)
@@ -34,12 +35,18 @@ func NewMysqlDB(store string) *gorm.DB {
 	if timeout == "" {
 		timeout = "20"
 	}
+	// 慢sql阈值
+	slowThreshold := dbViper.GetDuration("slow_threshold")
+	if slowThreshold == 0 {
+		slowThreshold = time.Second
+	}
 
 	dsn := username + ":" + password + "@tcp(" + address + ")/" + database +
 		"?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=true&loc=Local&timeout=" + timeout + "s"
 	orm, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		//Logger: glog.Discard, // 不打印trace日志
-		Logger: &gormLog{glog.Discard}, // 打印trace日志
+		Logger: &gormLog{
+			slowThreshold: slowThreshold,
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -54,15 +61,17 @@ func NewMysqlDB(store string) *gorm.DB {
 
 type gormLog struct {
 	glog.Interface
+	slowThreshold time.Duration
 }
 
-const msg = "gorm"
-
-func (*gormLog) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+func (g *gormLog) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 	sql, rows := fc()
+	elapsed := time.Since(begin)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		logging.FromContext(ctx).ErrorL(msg, sql, err)
-	} else if viper.GetString("app.env") == def.EnvDevelopment {
-		logging.FromContext(ctx).Info(msg, sql, rows, begin)
+		logging.FromContext(ctx).ErrorL("gorm.error", sql, err, logging.AttrOption{StartTime: &begin})
+	} else if elapsed > g.slowThreshold {
+		logging.FromContext(ctx).ErrorL("gorm.slow", sql, err, logging.AttrOption{StartTime: &begin})
+	} else if viper.GetString("app.env") == def.EnvDevelopment { // 开发环境开启debug日志
+		logging.FromContext(ctx).Warn("gorm.debug", sql, rows, logging.AttrOption{StartTime: &begin})
 	}
 }

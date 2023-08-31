@@ -3,29 +3,20 @@ package core
 import (
 	"blog-admin-api/errcode"
 	"blog-admin-api/pkg/def"
+	"blog-admin-api/pkg/logging"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 )
 
-type Logger interface {
-	Info(message string, request, response interface{}, t ...time.Time)
-	Warn(message string, request, response interface{}, t ...time.Time)
-	ErrorL(message string, request, response interface{}, t ...time.Time)
-	Fatal(message string, request, response interface{}, t ...time.Time)
-}
-
 type Context struct {
 	Env string
 	*gin.Context
-	Logger
+	*logging.Logger
 	TimeLocation *time.Location
 }
 
 func (c *Context) Success(data interface{}) {
-	if data == nil {
-		data = gin.H{}
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"code": 200,
 		"msg":  "success",
@@ -34,9 +25,6 @@ func (c *Context) Success(data interface{}) {
 }
 
 func (c *Context) Fail(code int, msg string, detail, data interface{}) {
-	if data == nil {
-		data = gin.H{}
-	}
 	if c.Env == def.EnvProduction {
 		c.AbortWithStatusJSON(http.StatusOK, gin.H{
 			"code": code,
