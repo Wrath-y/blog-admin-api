@@ -12,7 +12,7 @@ type Article struct {
 	Html   string `json:"html"`
 	Con    string `json:"con"`
 	Tags   string `json:"tags"`
-	Hits   string `json:"hits"`
+	Hits   int    `json:"hits"`
 	Status int    `json:"status"`
 	Source int    `json:"source"`
 }
