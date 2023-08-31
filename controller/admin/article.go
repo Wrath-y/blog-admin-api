@@ -32,12 +32,13 @@ func AddArticle(c *core.Context) {
 	logMap["r"] = r
 
 	res := &entity.Article{
-		Title: r.Title,
-		Image: r.Image,
-		Intro: r.Intro,
-		Html:  r.Html,
-		Con:   r.Con,
-		Tags:  r.Tags,
+		Title:  r.Title,
+		Image:  r.Image,
+		Intro:  r.Intro,
+		Html:   r.Html,
+		Con:    r.Con,
+		Tags:   r.Tags,
+		Status: r.Status,
 		Base: &entity.Base{
 			UpdateTime: time.Now().In(c.TimeLocation),
 			CreateTime: time.Now().In(c.TimeLocation),
@@ -95,12 +96,13 @@ func UpdateArticle(c *core.Context) {
 	logMap["articleInfo"] = articleInfo
 
 	data := &entity.Article{
-		Title: r.Title,
-		Image: r.Image,
-		Intro: r.Intro,
-		Html:  r.Html,
-		Con:   r.Con,
-		Tags:  r.Tags,
+		Title:  r.Title,
+		Image:  r.Image,
+		Intro:  r.Intro,
+		Html:   r.Html,
+		Con:    r.Con,
+		Status: r.Status,
+		Tags:   r.Tags,
 		Base: &entity.Base{
 			CreateTime: articleInfo.CreateTime,
 			UpdateTime: time.Now().In(c.TimeLocation),
