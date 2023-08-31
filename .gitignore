@@ -16,7 +16,11 @@
 static/pixiv/
 vendor/
 bin/
-logs/
+
+.vscode
+log/*
+!log/.gitkeep
+conf.yaml
 
 supervisord.log
 supervisord.pid
