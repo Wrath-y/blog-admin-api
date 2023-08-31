@@ -28,7 +28,7 @@ func (a *Article) Create() error {
 func (a *Article) Update(id int) error {
 	a.Id = id
 
-	return db.Orm.Model(a).Updates(a).Error
+	return db.Orm.Model(a).Save(a).Error
 }
 
 func (*Article) Delete(id int) error {
