@@ -39,8 +39,8 @@ func AddArticle(c *core.Context) {
 		Con:   r.Con,
 		Tags:  r.Tags,
 		Base: &entity.Base{
-			UpdatedAt: time.Now().In(c.TimeLocation),
-			CreatedAt: time.Now().In(c.TimeLocation),
+			update_time: time.Now().In(c.TimeLocation),
+			CreateTime:  time.Now().In(c.TimeLocation),
 		},
 	}
 	logMap["res"] = res
@@ -102,8 +102,8 @@ func UpdateArticle(c *core.Context) {
 		Con:   r.Con,
 		Tags:  r.Tags,
 		Base: &entity.Base{
-			CreatedAt: articleInfo.CreatedAt,
-			UpdatedAt: time.Now().In(c.TimeLocation),
+			CreateTime:  articleInfo.CreateTime,
+			update_time: time.Now().In(c.TimeLocation),
 		},
 	}
 	logMap["data"] = data
