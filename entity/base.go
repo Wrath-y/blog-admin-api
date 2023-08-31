@@ -7,6 +7,6 @@ import (
 
 type Base struct {
 	Id         int       `json:"id"`
-	UpdateTime time.Time `json:"UpdateTime"`
+	UpdateTime time.Time `json:"update_time"`
 	CreateTime time.Time `json:"create_time"`
 }
