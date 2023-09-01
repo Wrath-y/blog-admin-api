@@ -24,6 +24,8 @@ func SetArticleSeo(c *core.Context) {
 		return
 	}
 
+	c.Info("设置文章SEO", r, "")
+
 	data := entity.ArticleSeo{
 		Base: &entity.Base{
 			Id:         r.Id,
@@ -51,14 +53,12 @@ func SetArticleSeo(c *core.Context) {
 
 func GetArticleSeo(c *core.Context) {
 	articleID, _ := strconv.Atoi(c.Param("article_id"))
-	data, err := new(entity.ArticleSeo).FindByArticleID(articleID)
+	data, err := new(entity.ArticleSeo).GetByArticleID(articleID)
 	if err != nil {
 		c.ErrorL("获取seo列表失败", articleID, err.Error())
 		c.FailWithErrCode(errcode.ArticleSeoGetFailed, nil)
 		return
 	}
 
-	c.Success(map[string]interface{}{
-		"list": data,
-	})
+	c.Success(data)
 }

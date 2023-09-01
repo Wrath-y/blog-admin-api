@@ -20,7 +20,7 @@ func (a *ArticleSeo) Set(data ArticleSeo) error {
 	return db.Orm.Save(&data).Error
 }
 
-func (*ArticleSeo) FindByArticleID(articleID int) ([]*ArticleSeo, error) {
-	var articleSelList []*ArticleSeo
-	return articleSelList, db.Orm.Raw("select * from article_seo where article_id = ?", articleID).Find(&articleSelList).Error
+func (*ArticleSeo) GetByArticleID(articleID int) (*ArticleSeo, error) {
+	var articleSelList *ArticleSeo
+	return articleSelList, db.Orm.Raw("select * from article_seo where article_id = ?", articleID).First(&articleSelList).Error
 }
