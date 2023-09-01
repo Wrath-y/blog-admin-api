@@ -5,6 +5,7 @@ import (
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
 	"blog-admin-api/service/article"
+	"gorm.io/gorm"
 	"strconv"
 	"time"
 )
@@ -54,7 +55,7 @@ func SetArticleSeo(c *core.Context) {
 func GetArticleSeo(c *core.Context) {
 	articleID, _ := strconv.Atoi(c.Param("article_id"))
 	data, err := new(entity.ArticleSeo).GetByArticleID(articleID)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		c.ErrorL("获取seo列表失败", articleID, err.Error())
 		c.FailWithErrCode(errcode.ArticleSeoGetFailed, nil)
 		return
