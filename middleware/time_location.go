@@ -6,5 +6,10 @@ import (
 )
 
 func TimeLocation(c *core.Context) {
-	c.TimeLocation = time.FixedZone("CST", 8*3600)
+	l, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		l = time.FixedZone("CST", 8*3600)
+	}
+
+	c.TimeLocation = l
 }

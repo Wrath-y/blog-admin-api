@@ -20,7 +20,7 @@ func Register() *gin.Engine {
 		c.JSON(http.StatusOK, nil)
 	})
 
-	g := r.Group("/")
+	g := r.Group("/", core.Handle(middleware.TimeLocation))
 	loadAdmin(g)
 
 	return r

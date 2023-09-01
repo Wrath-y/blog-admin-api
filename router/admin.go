@@ -13,7 +13,7 @@ func loadAdmin(r *gin.RouterGroup) {
 		noAuthApi.POST("/login", core.Handle(admin.Login))
 	}
 
-	authApi := r.Group("/", core.Handle(middleware.Auth), core.Handle(middleware.Logging), core.Handle(middleware.TimeLocation))
+	authApi := r.Group("/", core.Handle(middleware.Auth), core.Handle(middleware.Logging))
 	{
 		articles := authApi.Group("/articles")
 		{
