@@ -4,19 +4,17 @@ import (
 	"blog-admin-api/core"
 	"blog-admin-api/entity"
 	"blog-admin-api/errcode"
-	"blog-admin-api/service/articleseo"
+	"blog-admin-api/service/article"
 	"strconv"
 	"time"
 )
 
 type ArticleSeoRequest struct {
-	ArticleID int `json:"article_id"`
-	Details   []*ArticleSeoReqDetail
-}
-
-type ArticleSeoReqDetail struct {
-	Name    string `json:"name" binding:"required"`
-	Content string `json:"content" binding:"required"`
+	entity.Base
+	ArticleID   int    `json:"article_id"`
+	Title       string `json:"title"`
+	Keywords    string `json:"keywords"`
+	Description string `json:"description"`
 }
 
 func SetArticleSeo(c *core.Context) {
@@ -26,28 +24,26 @@ func SetArticleSeo(c *core.Context) {
 		return
 	}
 
-	details := make([]*entity.ArticleSeo, 0, len(r.Details))
-	for _, v := range r.Details {
-		details = append(details, &entity.ArticleSeo{
-			ArticleID: r.ArticleID,
-			Name:      v.Name,
-			Content:   v.Content,
-			Base: &entity.Base{
-				UpdateTime: time.Now().In(c.TimeLocation),
-				CreateTime: time.Now().In(c.TimeLocation),
-			},
-		})
-
+	data := entity.ArticleSeo{
+		Base: &entity.Base{
+			Id:         r.Id,
+			UpdateTime: time.Now().In(c.TimeLocation),
+			CreateTime: r.CreateTime,
+		},
+		ArticleID:   r.ArticleID,
+		Title:       r.Title,
+		Keywords:    r.Keywords,
+		Description: r.Description,
 	}
 
-	if err := new(entity.ArticleSeo).Set(details); err != nil {
-		c.ErrorL("创建文章SEO失败", details, err.Error())
+	if err := new(entity.ArticleSeo).Set(data); err != nil {
+		c.ErrorL("创建文章SEO失败", data, err.Error())
 		c.FailWithErrCode(errcode.ArticleSeoSetFailed, nil)
 		return
 	}
 
-	if err := articleseo.DelList(r.ArticleID); err != nil {
-		c.ErrorL("删除文章SEO失败", r, err.Error())
+	if err := article.DelById(r.ArticleID); err != nil {
+		c.ErrorL("删除seo缓存失败", r, err.Error())
 	}
 
 	c.Success(nil)

@@ -6,31 +6,18 @@ import (
 
 type ArticleSeo struct {
 	*Base
-	ArticleID int    `json:"article_id"`
-	Name      string `json:"name"`
-	Content   string `json:"content"`
+	ArticleID   int    `json:"article_id"`
+	Title       string `json:"title"`
+	Keywords    string `json:"keywords"`
+	Description string `json:"description"`
 }
 
 func (*ArticleSeo) TableName() string {
 	return "article_seo"
 }
 
-func (a *ArticleSeo) Set(details []*ArticleSeo) error {
-	if len(details) == 0 {
-		return nil
-	}
-	tx := db.Orm.Begin()
-	if err := tx.Exec("delete from article_seo where article_id = ?", details[0].ArticleID).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	for _, v := range details {
-		if err := tx.Create(v).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return tx.Commit().Error
+func (a *ArticleSeo) Set(data ArticleSeo) error {
+	return db.Orm.Save(&data).Error
 }
 
 func (*ArticleSeo) FindByArticleID(articleID int) ([]*ArticleSeo, error) {
