@@ -37,10 +37,7 @@ func (*Comment) FindWithPage(page, limit int) ([]*Comment, int64, error) {
 }
 
 func (*Comment) Delete(id int) error {
-	c := new(Comment)
-	c.Id = id
-
-	return db.Orm.Delete(c).Error
+	return db.Orm.Exec("delete from comment where id = ?", id).Error
 }
 
 func (*Comment) GetById(id int) (*Comment, error) {
