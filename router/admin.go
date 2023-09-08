@@ -23,7 +23,7 @@ func loadAdmin(r *gin.RouterGroup) {
 			articles.GET("", core.Handle(admin.GetArticles))
 			articles.GET("/:id", core.Handle(admin.GetArticle))
 		}
-		seo := authApi.Group("/article_seo")
+		seo := authApi.Group("/seo")
 		{
 			seo.POST("", core.Handle(admin.SetArticleSeo))
 			seo.GET("/:article_id", core.Handle(admin.GetArticleSeo))
