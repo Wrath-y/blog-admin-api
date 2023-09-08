@@ -68,6 +68,10 @@ func DelArticle(c *core.Context) {
 		return
 	}
 
+	if err := new(entity.ArticleSeo).Delete(id); err != nil {
+		c.ErrorL("删除seo失败", logMap, err.Error())
+	}
+
 	if err := article.DelById(id); err != nil {
 		c.ErrorL("删除缓存失败", logMap, err.Error())
 	}

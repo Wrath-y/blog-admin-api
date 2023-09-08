@@ -24,3 +24,7 @@ func (*ArticleSeo) GetByArticleID(articleID int) (*ArticleSeo, error) {
 	var articleSelList *ArticleSeo
 	return articleSelList, db.Orm.Raw("select * from article_seo where article_id = ?", articleID).First(&articleSelList).Error
 }
+
+func (*ArticleSeo) Delete(articleId int) error {
+	return db.Orm.Exec("delete from article_seo where article_id = ?", articleId).Error
+}
