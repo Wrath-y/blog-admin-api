@@ -20,10 +20,7 @@ func (h *FriendLink) Create() error {
 }
 
 func (*FriendLink) Delete(id int) error {
-	h := FriendLink{}
-	h.Id = id
-
-	return db.Orm.Delete(h).Error
+	return db.Orm.Exec("delete from friend_link where id = ?", id).Error
 }
 
 func (h *FriendLink) Update(id int) error {
