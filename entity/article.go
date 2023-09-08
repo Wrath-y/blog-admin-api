@@ -32,10 +32,7 @@ func (a *Article) Update(id int) error {
 }
 
 func (*Article) Delete(id int) error {
-	a := Article{}
-	a.Id = id
-
-	return db.Orm.Delete(a).Error
+	return db.Orm.Exec("delete from article where id = ?", id).Error
 }
 
 func (*Article) FindWithPage(page, limit int) ([]*Article, int64, error) {
