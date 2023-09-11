@@ -57,10 +57,10 @@ func GetGmtIso8601(expireEnd int64) string {
 
 func GetUpload(c *core.Context) {
 	logMap := make(map[string]interface{})
-	accessKeyId := viper.GetString("aliyun.oss.access_keyid")
-	accessKeySecret := viper.GetString("aliyun.oss.access_keysecret")
+	accessKeyId := viper.GetString("aliyun.oss.default.access_keyid")
+	accessKeySecret := viper.GetString("aliyun.oss.default.access_keysecret")
 	// host的格式为 bucketname.endpoint
-	host := fmt.Sprintf("https://%s.oss-cn-shanghai.aliyuncs.com", viper.GetString("aliyun.oss.bucket"))
+	host := fmt.Sprintf("https://%s.oss-cn-shanghai.aliyuncs.com", viper.GetString("aliyun.oss.default.bucket"))
 	logMap["host"] = host
 	logMap["accessKeyId"] = accessKeyId
 	logMap["accessKeySecret"] = accessKeySecret

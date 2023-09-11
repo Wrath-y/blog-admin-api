@@ -41,9 +41,9 @@ func Count() (int, error) {
 }
 
 func Bucket() (*oss.Bucket, error) {
-	clientSer, _ := oss.New(viper.GetString("aliyun.oss.endpoint"),
-		viper.GetString("aliyun.oss.access_keyid"),
-		viper.GetString("aliyun.oss.access_keysecret"))
+	clientSer, _ := oss.New(viper.GetString("aliyun.oss.pixiv.endpoint"),
+		viper.GetString("aliyun.oss.pixiv.access_keyid"),
+		viper.GetString("aliyun.oss.pixiv.access_keysecret"))
 	// 获取存储空间。
-	return clientSer.Bucket(viper.GetString("aliyun.oss.bucket"))
+	return clientSer.Bucket(viper.GetString("aliyun.oss.pixiv.bucket"))
 }

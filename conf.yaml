@@ -32,10 +32,16 @@ consul:
   default:
     address: 127.0.0.1:8500
 aliyun.oss:
-  endpoint:
-  bucket:
-  access_keyid:
-  access_keysecret:
+  default:
+    endpoint:
+    bucket:
+    access_keyid:
+    access_keysecret:
+  pixiv:
+    endpoint:
+    bucket:
+    access_keyid:
+    access_keysecret:
 access_whitelist:
   enabled: false # env=testing 该配置无效,强制开启
   ip_list:
