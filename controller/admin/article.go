@@ -105,8 +105,10 @@ func UpdateArticle(c *core.Context) {
 		Intro:  r.Intro,
 		Html:   r.Html,
 		Con:    r.Con,
-		Status: r.Status,
 		Tags:   r.Tags,
+		Hits:   articleInfo.Hits,
+		Status: r.Status,
+		Source: articleInfo.Source,
 		Base: &entity.Base{
 			CreateTime: articleInfo.CreateTime,
 			UpdateTime: time.Now().In(c.TimeLocation),
